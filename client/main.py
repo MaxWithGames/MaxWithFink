@@ -37,8 +37,8 @@ pygame.init()
 video_info = pygame.display.Info()
 print(video_info.current_w, video_info.current_h)
 
-screen = pygame.display.set_mode(size=(settings.resolution_x, settings.resolution_y), flags=pygame.RESIZABLE)
-canvas = pygame.Surface(size=(1600, 900))
+screen = pygame.display.set_mode(size=(settings.resolution_x, settings.resolution_y), flags=pygame.FULLSCREEN)
+canvas = pygame.Surface(size=(1920, 1080))
 
 class Camera:
     def __init__(self, function=None) -> None:
@@ -57,7 +57,7 @@ def follow_player(p_pos, c_size):
 
 camera = Camera(follow_player)
 
-names_font = pygame.font.SysFont('notosanssemibold', 32) 
+names_font = pygame.font.Font('Deiland.ttf', 32)
 
 is_running = True
 last_update_time = pygame.time.get_ticks()
@@ -92,6 +92,8 @@ while is_running:
         main_player.pos[1] -= 5
     if keys[pygame.K_DOWN]:
         main_player.pos[1] += 5
+    if keys[pygame.K_ESCAPE]:
+        is_running = False
     lock.release()
 
     dx, dy = camera.get_offset(main_player.pos, canvas.get_size())
@@ -99,7 +101,13 @@ while is_running:
     screen.fill((0, 0, 0))
     canvas.fill((0, 0, 0))
 
-    visible_area = (main_player.pos[0] - 800, main_player.pos[1] - 450, main_player.pos[0] + 800, main_player.pos[1] + 450)
+    visible_area = (
+        main_player.pos[0] - canvas.get_size()[0] // 2,
+        main_player.pos[1] - canvas.get_size()[1] // 2,
+        main_player.pos[0] + canvas.get_size()[0] // 2,
+        main_player.pos[1] + canvas.get_size()[1] // 2
+    )
+
     world.render(canvas, (dx, dy), visible_area)
 
     pygame.draw.rect(canvas, (0, 0, 255), (main_player.pos[0] + dx, main_player.pos[1] + dy, 60, 70))
@@ -118,7 +126,9 @@ while is_running:
     else:
         scale = (screen.get_size()[0], int(screen.get_size()[0] * 9 / 16))
     
-    scaled_canvas = pygame.transform.scale(canvas, scale)
+    print(scale)
+
+    scaled_canvas = pygame.transform.smoothscale(canvas, scale)
     canvas_x_offset = (scaled_canvas.get_size()[0] - screen.get_size()[0]) // 2
     screen.blit(scaled_canvas, (-canvas_x_offset, 0))
 
