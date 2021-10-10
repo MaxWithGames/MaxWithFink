@@ -8,9 +8,12 @@ import sys
 
 sys.path.append('../')
 
-from common.world import World
+from common.world import World, generate_perlin_noise_2d
 from common.utils import recvall, sendall
 from common.player import Player
+
+# print(generate_perlin_noise_2d((10, 10), (2, 2)))
+# exit()
 
 class Server():
     @dataclass 
@@ -38,7 +41,8 @@ class Server():
 
         print('Creating world...')
         self.world = World((32, 32))
-        self.world.generate_random_wolrd()
+        #self.world.generate_random_wolrd()
+        self.world.generate_world_from_perlin_noise()
         print('World generated!')
 
         self.lock = threading.Lock()
