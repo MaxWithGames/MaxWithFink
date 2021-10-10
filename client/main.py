@@ -21,10 +21,11 @@ main_socket = socket.socket(
     socket.SOCK_STREAM,
 )
 
-main_player = Player([0, 0], 'MaxWithGames')
+main_player = Player([0, 0], settings.name)
 other_players = []
 
-main_socket.connect(('localhost', 1236))
+print((settings.server_addres, settings.server_port))
+main_socket.connect((settings.server_addres, settings.server_port))
 response = recvall(main_socket)
 sendall(main_socket, pickle.dumps(main_player))
 
@@ -36,7 +37,7 @@ pygame.init()
 video_info = pygame.display.Info()
 print(video_info.current_w, video_info.current_h)
 
-screen = pygame.display.set_mode(size=settings.resolution, flags=pygame.RESIZABLE)
+screen = pygame.display.set_mode(size=(settings.resolution_x, settings.resolution_y), flags=pygame.RESIZABLE)
 canvas = pygame.Surface(size=(1600, 900))
 
 class Camera:
@@ -56,7 +57,7 @@ def follow_player(p_pos, c_size):
 
 camera = Camera(follow_player)
 
-names_font = pygame.font.SysFont('notosans', 32) 
+names_font = pygame.font.SysFont('notosanssemibold', 32) 
 
 is_running = True
 last_update_time = pygame.time.get_ticks()
