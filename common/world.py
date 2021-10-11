@@ -47,6 +47,12 @@ class World():
         def get_data(self):
             return self.get_id(), self.pos, self.data
 
+        def get_speed_multiplier(self):
+            return 1.
+
+        def __repr__(self):
+            return f'{self.__class__}({self.pos}, data={self.data})'
+
     class SimpleBlock(BaseBlock):
         # data = color
         def render(self, canvas, offset, chunk_size):
@@ -58,7 +64,90 @@ class World():
         
         def get_id(self):
             return 1
-    
+
+    class Water(BaseBlock):
+        'data: deepnes'
+        def __init__(self, pos, data=None) -> None:
+            super().__init__(pos, data=data)
+
+            colors = (
+                (142, 215, 248),
+                (72, 176, 223),
+                (6, 141, 206),
+                (0, 74, 135)
+            )
+
+            speed_multipliers = (0.7, 0.5, 0.3, 0.1)
+
+            self.color = colors[data]
+            self.speed_multiplier = speed_multipliers[data]
+
+        def render(self, canvas, offset, chunk_size):
+            dx, dy = offset
+            px = self.pos[0] * 64 * chunk_size + self.pos[2] * 64 + dx
+            py = self.pos[1] * 64 * chunk_size + self.pos[3] * 64 + dy
+
+            pygame.draw.rect(canvas, self.color, (px, py, 64, 64))
+
+        def get_speed_multiplier(self):
+            return self.speed_multiplier
+
+        def get_id(self):
+            return 2
+
+    class Sand(BaseBlock):
+        'data: height'
+        def __init__(self, pos, data=None) -> None:
+            super().__init__(pos, data=data)
+
+            colors = (
+                (248, 248, 223),
+                (238, 236, 204)
+            )
+
+            speed_multipliers = (0.8, 0.9)
+
+            self.color = colors[data]
+            self.speed_multiplier = speed_multipliers[data]
+
+        def render(self, canvas, offset, chunk_size):
+            dx, dy = offset
+            px = self.pos[0] * 64 * chunk_size + self.pos[2] * 64 + dx
+            py = self.pos[1] * 64 * chunk_size + self.pos[3] * 64 + dy
+
+            pygame.draw.rect(canvas, self.color, (px, py, 64, 64))
+
+        def get_speed_multiplier(self):
+            return self.speed_multiplier
+
+        def get_id(self):
+            return 3
+
+    class Terrain(BaseBlock):
+        'data: height'
+        def __init__(self, pos, data=None) -> None:
+            super().__init__(pos, data=data)
+
+            colors = (
+                (163, 209, 45),
+                (124, 184, 51),
+                (86, 159, 57),
+                (47, 134, 62),
+                (8, 109, 68)
+            )
+
+            self.color = colors[data]
+
+        def render(self, canvas, offset, chunk_size):
+            dx, dy = offset
+            px = self.pos[0] * 64 * chunk_size + self.pos[2] * 64 + dx
+            py = self.pos[1] * 64 * chunk_size + self.pos[3] * 64 + dy
+
+            pygame.draw.rect(canvas, self.color, (px, py, 64, 64))
+
+        def get_id(self):
+            return 4
+
     class ShiningBlock(BaseBlock):
         def render(self, canvas, offset, chunk_size):
             dx, dy = offset
@@ -77,7 +166,6 @@ class World():
                 (255, 171, 213),
                 (255, 150, 198),
                 (255, 150, 198),
-                # (255, 133, 194),
                 (254, 195, 215),
                 (255, 171, 213),
                 (255, 255, 255)
@@ -94,7 +182,7 @@ class World():
                     )
 
         def get_id(self):
-            return 2
+            return 255
 
     def generate_random_wolrd(self):
         for i in range(self.chunks_count[0]):
@@ -119,61 +207,31 @@ class World():
             (self.chunks_count[0] * self.CHUNK_SIZE, self.chunks_count[1] * self.CHUNK_SIZE),
             (self.chunks_count[0] * self.CHUNK_SIZE // 32, self.chunks_count[1] * self.CHUNK_SIZE // 32)
         )
-        
-        water_colors = [
-            (142, 215, 248),
-            (72, 176, 223),
-            (6, 141, 206),
-            (0, 74, 135)
-        ]
-
-        sand_colors = [
-            (238, 236, 204),
-            (248, 248, 223)
-        ]
-
-        green_colors = [
-            (8, 109, 68),
-            (47, 134, 62),
-            (86, 159, 57),
-            (124, 184, 51),
-            (163, 209, 45)
-        ]
 
         def paint_chunk_from_noise(i, j):
             for n in range(self.CHUNK_SIZE):
                 for m in range(self.CHUNK_SIZE):
                     h = noise[i * self.CHUNK_SIZE + n, j * self.CHUNK_SIZE + m]
                     if h < -0.1: # water
-                        if h > -0.2:
-                            color = water_colors[0]
-                        elif h > -0.35:
-                            color = water_colors[1]
-                        elif h > -0.60:
-                            color = water_colors[2]
-                        else:
-                            color = water_colors[3]
-                    elif h < 0.1:
-                        if h > 0.0:
-                            color = sand_colors[0]
-                        else:
-                            color = sand_colors[1]
-                    else:
-                        if h < 0.2:
-                            color = green_colors[-1]
-                        elif h < 0.35:
-                            color = green_colors[-2]
-                        elif h < 0.55:
-                            color = green_colors[-3]
-                        elif h < 0.85:
-                            color = green_colors[-4]
-                        else:
-                            color = green_colors[-5]
+                        trasholds = (-0.6, -0.35, -0.2)
+                        deepness = 3
+                        for trashold in trasholds:
+                            if h > trashold: deepness -= 1
+                        block = World.Water((i, j, n, m), deepness)
+                    elif h < 0.1: # sand
+                        trasholds = (0.0,)
+                        height = 0
+                        for trashold in trasholds:
+                            if h > trashold: height += 1
+                        block = World.Sand((i, j, n, m), height)
+                    else: # terrain
+                        trasholds = (0.2, 0.35, 0.55, 0.85)
+                        height = 0
+                        for trashold in trasholds:
+                            if h > trashold: height += 1
+                        block = World.Terrain((i, j, n, m), height)
 
-                    self.chunks[i][j][n][m] = World.SimpleBlock(
-                        (i, j, n, m),
-                        color
-                    )
+                    self.chunks[i][j][n][m] = block
 
         for i in range(self.chunks_count[0]):
             for j in range(self.chunks_count[1]):
@@ -188,20 +246,31 @@ class World():
                         (i, j, x, y)
                     )
 
-        # self.chunks[0][0][0][0] = World.ShiningBlock(
-        #     (0, 0, 0, 0),
-        #     (0, 0, 0)
-        # )
+    # def get_new_block_buy_id(self, id, pos, data=None):
+    #     return self.id_dict[id]
 
-    def get_new_block_buy_id(self, id, pos, data=None):
-        return self.id_dict[id]
+    def get_block_by_pos(self, pos) -> BaseBlock:
+        if pos[0] < 0 or pos[1] < 0: return None
+        if pos[0] > self.chunks_count[0] * self.CHUNK_SIZE * 64: return None
+        if pos[1] > self.chunks_count[1] * self.CHUNK_SIZE * 64: return None
+
+        chunk_x = int(pos[0]) // 64 // self.CHUNK_SIZE
+        block_x = (int(pos[0]) - chunk_x * self.CHUNK_SIZE * 64) // 64
+
+        chunk_y = int(pos[1]) // 64 // self.CHUNK_SIZE
+        block_y = (int(pos[1]) - chunk_y * self.CHUNK_SIZE * 64) // 64
+
+        return self.chunks[chunk_x][chunk_y][block_x][block_y]
 
     def __init__(self, chunks_count=(0, 0)):
         
         self.id_dict = {
             0: World.BaseBlock,
             1: World.SimpleBlock,
-            2: World.ShiningBlock
+            2: World.Water,
+            3: World.Sand,
+            4: World.Terrain,
+            255: World.ShiningBlock
         }
 
         self.CHUNK_SIZE = 32
@@ -214,8 +283,8 @@ class World():
         return True
 
     def render(self, canvas, offset, visible_area):
-        for i in range(self.chunks_count[0]):
-            for j in range(self.chunks_count[1]):
+        for i, chunk_row in enumerate(self.chunks):
+            for j, chunk in enumerate(chunk_row):
                 chunk_area = (
                     i * 64 * self.CHUNK_SIZE,
                     j * 64 * self.CHUNK_SIZE,
@@ -224,10 +293,8 @@ class World():
                 )
 
                 if self.is_rectangles_overlap(chunk_area, visible_area):
-                    curr_chunk = self.chunks[i][j]
-                    for row in curr_chunk:
+                    for row in chunk:
                         for block in row:
-                            # pass
                             block.render(canvas, offset, self.CHUNK_SIZE)
 
     def save(self):
